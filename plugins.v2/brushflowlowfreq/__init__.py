@@ -2570,6 +2570,13 @@ class BrushFlowLowFreq(_PluginBase):
                         torrent_task = self.__convert_torrent_info_to_task(torrent)
                         torrent_tasks[torrent_hash] = torrent_task
                         added_tasks.append(torrent_task)
+                        self.eventmanager.send_event(etype=EventType.PluginTriggered, data={
+                            "plugin_id": self.__class__.__name__,
+                            "event_name": "brushflow_download_added",
+                            "hash": torrent_hash,
+                            "data": torrent_task,
+                            "downloader": self.service_info.name
+                        })
                         logger.info(f"站点 {torrent_task.get('site_name')}，"
                                     f"刷流任务种子加入：{torrent_task.get('title')}|{torrent_task.get('description')}")
                 # 包含刷流标签又在刷流任务中，这里额外处理一个特殊逻辑，就是种子在刷流任务中可能被标记删除但实际上又还在下载器中，这里进行重置
@@ -2942,6 +2949,8 @@ class BrushFlowLowFreq(_PluginBase):
 
         site_id, site_name = self.__get_site_by_torrent(torrent=torrent)
 
+        brush_config = self.__get_brush_config(sitename=site_name)
+
         torrent_task = {
             "site": site_id,
             "site_name": site_name,
@@ -2955,7 +2964,7 @@ class BrushFlowLowFreq(_PluginBase):
             "freedate": None,
             "uploadvolumefactor": None,
             "downloadvolumefactor": None,
-            "hit_and_run": None,
+            "hit_and_run": torrent.hit_and_run or brush_config.site_hr_active,
             "volume_factor": None,
             "freedate_diff": None,  # 假设无法从torrent_info直接获取
             "ratio": torrent_info.get("ratio", 0),
